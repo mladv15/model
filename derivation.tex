@@ -220,7 +220,7 @@ If we concentrate on $U$ and $V$ and regard the remaining variables as constant 
 
 $$ \propto \int_{UV}{q(U)q(V)log(\frac{p(U,V)p(W|\alpha)}{q(U)q(V)})dUdV}$$
 
-At this point we use fixed-form distributions for $q(U)$ and $q(V)$ such that $q(U)=\delta_U$ and $q(V) = \delta_V$ such that:
+At this point we use fixed-form distributions for $q(U)$ and $q(V)$ such that $q(U)=\delta_U$ and $q(V) = \delta_V$ and:
 
 $$ \propto \int_{UV}{log(p(U,V)) + log(p(W|U,V)) dUdV}$$
 
@@ -232,5 +232,46 @@ We then express $p(W|\alpha)$ in terms of $U$ and $V$ as opposed to $\alpha$ suc
 
 $$\propto \int_{UV}{2log(p(U,V)) + \sum_m^M{\sum_k^K{\Big(D_m u_m v_k^\intercal - \langle W^{(m)}W^{(m)\intercal}\rangle_{k,k}e^{u_m v_k^\intercal}  \Big) }}dUdV}$$
 
+The expression $L = 2log(p(U,V)) + \sum_m^M{\sum_k^K{\Big(D_m u_m v_k^\intercal - \langle W^{(m)}W^{(m)\intercal}\rangle_{k,k}e^{u_m v_k^\intercal}  \Big) }}$ can be maximized by gradient descent provided we compute the derivatives $\frac{\delta L}{\delta U}$ and $\frac{\delta L}{\delta V}$.
+
+.
+.
+.
+
+Recalling that $\alpha_{m,k} = e^{u_m v_k^\intercal}$ and that $log(p(U,V)) = -2\lambda (tr(U^\intercal U) + tr(V^\intercal V))$ allows us to write the expression for $L$ above as:  
+
+$$L = \sum_m^M{\sum_k^K{\Big(D_mlog(\alpha_{m,k}) - \langle W^{(m)}W^{(m)\intercal}\rangle_{k,k} \alpha_{m,k}}}\Big)-2\lambda (tr(U^\intercal U) + tr(V^\intercal V))$$
+
+Then if we assume $\lambda$ to be negibly small we have that the derivative of $L$ with respect to $\alpha_{m,k}$ is given by:
+
+$$\frac{\delta L}{\delta \alpha_{m.k}} = \frac{D_m}{\alpha_{m,k}} - \langle W^{(m)}W^{(m)\intercal}\rangle_{k,k}$$
+
+Which in turns implies that $L$ is maximized with respect to $\alpha_{m,k}$ whenever:
+
+$$\alpha_{m,k} = \frac{D_m}{\langle W^{(m)}W^{(m)\intercal}\rangle_{k,k}}$$
+
+Then in comparison if we perform full variational inference over $\alpha_{m,k}$ by setting a prior such as:
+
+$$p(\alpha_{m,k}) = \mathcal{G}(a^\alpha,b^\alpha)$$
+
+We obtain:
+
+$$log(q(\alpha_{m,k})) = E_{W}[log(p(\Theta,X))] = E_{W}[log(p(\alpha_{m,k})] + E_{W}[log(p(W|\alpha)] + C_1$$
+
+$$ = E_{W}[log(\mathcal{G}(\alpha_{m,k}|a^\alpha,b^\alpha))] +  E_{W}\bigg[\sum_{d}^{D_m}{log(\mathcal{N}(w_{k,d}^{(m)}|0, \alpha_{m,k}^{-1}))}\bigg]+C_1$$
+
+$$= E_W[(a^\alpha-1)log(\alpha_{m,k}) - b^\alpha\alpha_{m,k}] + E_W\bigg[\frac{1}{2}\sum_d^{D_m}{log(\alpha_{m,k}) - w_{k,d}^{(m)2} \alpha_{m,k} }\bigg] + C_2$$
+
+Then recall that $\langle w_{k,d}^{(m)2}\rangle$ is the entry in the $k$-th column and $k$-th row of the matrix $\langle W^{(m)}W^{(m)\intercal}\rangle$ and we have:
+
+$$= \bigg(a^\alpha+\frac{D_m}{2}-1 \bigg)log(\alpha_{m,k}) - \bigg(b^\alpha\ + \frac{\langle W^{(m)}W^{(m)\intercal}\rangle_{k,k}}{2} \bigg) \alpha_{m,k} + C_2$$
+
+Which has the form of a Gamma distribution such that $q(\alpha_{m,k}) = \mathcal{G}(a_{m,k}^\alpha, b_{m,k}^\alpha)$ where:
+
+$$a_{m,k}^\alpha = a^\alpha+\frac{D_m}{2}$$
+
+$$b_{m,k}^\alpha = b^\alpha + \frac{w_k^{(m)\intercal}w_k^{(m)}}{2}$$
+
+And so we notice the resemblance between the solutions provided by numerical optimization and full variational inference.
 
 \end{document}
