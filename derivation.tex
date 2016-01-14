@@ -10,6 +10,10 @@
 \usepackage{color}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage{float}
 
 \definecolor{dkgreen}{rgb}{0,0.6,0}
 \definecolor{gray}{rgb}{0.5,0.5,0.5}
@@ -17,11 +21,11 @@
 
 \begin{document}
 
-\title{Advanced Machine Learning, Final Project}
-
-\author{Diego A. Mancevo (890525-T650) damdc@kth.se}
+\title{Advanced Machine Learning, Final Project. Model Inference.}
 
 \maketitle
+
+\section*{Model}
 
 We begin by presenting the graphical model corresponding to group factor analysis:
 
@@ -113,11 +117,13 @@ Then the model's full joint probability can be written as:
 
 $$p(\Theta,X) = p(Z,W,\tau,U,V,X) = p(Z)p(W|\alpha)p(\tau)p(U)p(V)p(X|W,Z,\tau)$$
 
-Where in order to minimize the Kullback-Leibler divergence:
+\section*{Inference}
+
+In order to minimize the Kullback-Leibler divergence:
 
 $$D_{KL}(q||p) = \int_\Theta{q(\Theta)log(\frac{q(\Theta)}{p(\Theta|X)})d\Theta}$$
 
-or equivalently to maximize:
+or equivalently to maximize the lower bound:
 
 $$\mathcal{L}(\Theta) = \int_\Theta{q(\Theta)log(\frac{p(\Theta,X)}{q(\Theta)})d\Theta}$$
 
@@ -204,13 +210,7 @@ $$a_m^\tau = a^\tau + \frac{ND_m}{2}$$
 
 $$b_m^\tau = b^\tau + \sum_i^N{\bigg\langle(x_i^{(m)}-W^{(m)\intercal}z_i)^2\bigg\rangle}$$
 
-Finally we turn our attention to $U$ and $V$ at which point we recall that $log(\alpha) = UV^\intercal + \mu_u + \mu_v$ but then notice that we can append both $\mu_u$ and $\mu_v$ to $U$ and $V$ respectively if we let:
-
-$$U = \bigg[U\bigg|\mu_u\bigg|\textbf{1}\bigg]$$
-
-$$V^\intercal = \bigg[V^\intercal\bigg|\textbf{1}\bigg|\mu_v\bigg]$$
-
-Such that $log(\alpha) = UV^\intercal$, so let us use the expanded version of $U$ and $V$ for what follows and then recall:
+Finally we turn our attention to $U$ and $V$:
 
 $$\mathcal{L}(\Theta) = \int_\Theta{q(\Theta)log(\frac{p(\Theta,X)}{q(\Theta)})d\Theta}$$
 
@@ -228,21 +228,58 @@ $$ = \int_{UV}{log(p(U,V)) + \sum_m^M{\sum_k^K{\sum_d^{D_m}{log\Big(\mathcal{N}(
 
 $$ = \int_{UV}{log(p(U,V)) + \sum_m^M{\sum_k^K{\sum_d^{D_m}{\frac{1}{2}log(\alpha_{m,k}) - \frac{1}{2}\alpha_{m,k}\langle w_{k,d}^{(m)2}\rangle }}}dUdV}$$
 
-We then express $p(W|\alpha)$ in terms of $U$ and $V$ as opposed to $\alpha$ such that $\alpha_{m,k} = e^{u_m v_k^\intercal}$ and notice that the sum from $d$ to $D_m$ of the second moments $\langle w_{k,d}^{(m)2}\rangle$ is the entry in the $k$-th column and $k$-th row of the matrix $\langle W^{(m)}W^{(m)\intercal}\rangle$ and thus:
+We then express $p(W|\alpha)$ in terms of $U$ and $V$ as opposed to $\alpha$. For this recall that $log(\alpha) = UV^\intercal + \mu_u + \mu_v$ but then notice that we can append both $\mu_u$ and $\mu_v$ to $U$ and $V$ respectively if we let:
 
-$$\propto \int_{UV}{2log(p(U,V)) + \sum_m^M{\sum_k^K{\Big(D_m u_m v_k^\intercal - \langle W^{(m)}W^{(m)\intercal}\rangle_{k,k}e^{u_m v_k^\intercal}  \Big) }}dUdV}$$
+$$U^\prime = \bigg[U\bigg|\mu_u\bigg|\textbf{1}\bigg]$$
 
-The expression $L = 2log(p(U,V)) + \sum_m^M{\sum_k^K{\Big(D_m u_m v_k^\intercal - \langle W^{(m)}W^{(m)\intercal}\rangle_{k,k}e^{u_m v_k^\intercal}  \Big) }}$ can be maximized by gradient descent provided we compute the derivatives $\frac{\delta L}{\delta U}$ and $\frac{\delta L}{\delta V}$.
+$$V^\prime = \bigg[V\bigg|\textbf{1}\bigg|\mu_v\bigg]$$
 
-.
-.
-.
+Such that $log(\alpha) = U^\prime V^{\prime \intercal}$ then $\alpha_{m,k} = e^{u^\prime_m v_k^{\prime \intercal}}$ and notice that the sum from $d$ to $D_m$ of the second moments $\langle w_{k,d}^{(m)2}\rangle$ is the entry in the $k$-th column and $k$-th row of the matrix $\langle W^{(m)}W^{(m)\intercal}\rangle$ and thus:
 
-Recalling that $\alpha_{m,k} = e^{u_m v_k^\intercal}$ and that $log(p(U,V)) = -2\lambda (tr(U^\intercal U) + tr(V^\intercal V))$ allows us to write the expression for $L$ above as:  
+$$\propto \int_{UV}{2log(p(U,V)) + \sum_m^M{\sum_k^K{\Big(D_m u^\prime_m v_k^{\prime \intercal} - \langle W^{(m)}W^{(m)\intercal}\rangle_{k,k}e^{u^\prime_m v_k^{\prime \intercal}}  \Big) }}dUdV}$$
 
-$$L = \sum_m^M{\sum_k^K{\Big(D_mlog(\alpha_{m,k}) - \langle W^{(m)}W^{(m)\intercal}\rangle_{k,k} \alpha_{m,k}}}\Big)-2\lambda (tr(U^\intercal U) + tr(V^\intercal V))$$
+The expression $L = 2log(p(U,V)) + \sum_m^M{\sum_k^K{\Big(D_m u^\prime_m v_k^{\prime \intercal} - \langle W^{(m)}W^{(m)\intercal}\rangle_{k,k}e^{u^\prime_m v_k^{\prime \intercal}}  \Big) }}$ can be maximized by gradient descent provided we compute the derivatives $\frac{\delta L}{\delta U}$,$\frac{\delta L}{\delta \mu_u}$, $\frac{\delta L}{\delta V}$ and $\frac{\delta L}{\delta \mu_v}$.
 
-Then if we assume $\lambda$ to be negibly small we have that the derivative of $L$ with respect to $\alpha_{m,k}$ is given by:
+\bigskip
+
+We begin by looking at $p(U)$ and $p(V)$ respectively where:
+
+$$p(U) = \prod_{m=1}^M \prod_{r=1}^R p(u_{mr}) = \prod_{m=1}^M \prod_{r=1}^R \mathcal{N}(u_{mr}|0,\lambda^{-1}) = \prod_{m=1}^M \prod_{r=1}^R (\frac{\lambda}{2\pi})^{\frac{1}{2}}e^{-\frac{\lambda}{2}u_{mr}^2} = (\frac{\lambda}{2\pi})^{\frac{MR}{2}}e^{-\frac{\lambda}{2}tr(U^TU)}$$
+
+And similarly:
+
+$$p(V) = (\frac{\lambda}{2\pi})^{\frac{KR}{2}}e^{-\frac{\lambda}{2}tr(V^TV)}$$
+
+And thus we can write:
+
+$$2log(p(U,V)) = 2log(p(U) p(V)) = 2log(e^{-\frac{\lambda}{2}(tr(U^TU)+tr(V^TV))}) + R(M+K) log(\frac{\lambda}{2\pi})$$
+$$ =  -\lambda (tr(U^TU)+tr(V^TV)) + C$$
+
+Such that:
+
+$$L = \sum_m^M{\sum_k^K{\Big(D_m u^\prime_m v_k^{\prime \intercal} - \langle W^{(m)}W^{(m)\intercal}\rangle_{k,k}e^{u^\prime_m v_k^{\prime \intercal}}  \Big) }}-\lambda (tr(U^TU)+tr(V^TV)) + C$$
+
+and therefore:
+
+$$\frac{\delta L}{\delta U} = AV + \lambda U \qquad \frac{\delta L}{\delta \mu_u} = A\textbf{1}$$
+
+$$\frac{\delta L}{\delta V} = A^\intercal U + \lambda V \qquad \frac{\delta L}{\delta \mu_v} = A^\intercal \textbf{1}$$
+
+Where:
+
+$$D^\intercal = [D_1,...,D_m,...,D_M]$$
+
+$$A = D\textbf{1}^\intercal - \textbf{1} tr(\langle W^{(m)}W^{(m)\intercal}\rangle)^\intercal \circ exp(U^\prime V^{\prime \intercal})$$
+
+Where $\circ$ stands for the Hadamard product (element-wise matrix multiplication) and the unit vectors $\textbf{1}$ are $K \times 1$ and $M \times 1$ respectively.
+
+\section*{Full Rank Model Inference.}
+
+Recalling:  
+
+$$L = \sum_m^M{\sum_k^K{\Big(D_mlog(\alpha_{m,k}) - \langle W^{(m)}W^{(m)\intercal}\rangle_{k,k} \alpha_{m,k}}}\Big)-2\lambda (tr(U^\intercal U) + tr(V^\intercal V)) + C$$
+
+Then assuming $\lambda$ to be negibly small and unrestricted by $U$ and $V$ we have that the derivative of $L$ with respect to $\alpha_{m,k}$ is given by:
 
 $$\frac{\delta L}{\delta \alpha_{m.k}} = \frac{D_m}{\alpha_{m,k}} - \langle W^{(m)}W^{(m)\intercal}\rangle_{k,k}$$
 
@@ -250,7 +287,7 @@ Which in turns implies that $L$ is maximized with respect to $\alpha_{m,k}$ when
 
 $$\alpha_{m,k} = \frac{D_m}{\langle W^{(m)}W^{(m)\intercal}\rangle_{k,k}}$$
 
-Then in comparison if we perform full variational inference over $\alpha_{m,k}$ by setting a prior such as:
+Moreover if we perform full variational inference over $\alpha_{m,k}$ by setting a prior such as:
 
 $$p(\alpha_{m,k}) = \mathcal{G}(a^\alpha,b^\alpha)$$
 
@@ -270,8 +307,43 @@ Which has the form of a Gamma distribution such that $q(\alpha_{m,k}) = \mathcal
 
 $$a_{m,k}^\alpha = a^\alpha+\frac{D_m}{2}$$
 
-$$b_{m,k}^\alpha = b^\alpha + \frac{w_k^{(m)\intercal}w_k^{(m)}}{2}$$
+$$b_{m,k}^\alpha = b^\alpha + \frac{\langle W^{(m)}W^{(m)\intercal}\rangle_{k,k}}{2}$$
 
-And so we notice the resemblance between the solutions provided by numerical optimization and full variational inference.
+And so we notice the resemblance between the solution provided by direct optimization and full variational inference drawing $\alpha_{m,k}$ from a gamma prior. In particular we notice that they are exactly the same whenever $a^\alpha = b^\alpha = 0$. We conclude that whenever the model is full rank (i.e. $R=min(M,K)$) the full variational inference solution can be used instead of numerically optimizing $U$ and $V$.
+
+\section*{Algorithm}
+
+Drawing from our results above we present the final algorithm:
+
+\makeatletter
+\def\BState{\State\hskip-\ALG@thistlm}
+\makeatother
+
+\begin{algorithm}[H]
+\caption{VB inference for GFA}\label{euclid}
+\begin{algorithmic}[1]
+\State $\text{Initialize } q(W), q(Z), q(\tau), U \text{and } V.$
+\While{not converged}
+\State $\text{Check for empty factors to be removed}$
+\State $q(W) \gets \prod_m^M{\prod_d^{D_m}{\mathcal{N}(w_{:,d}^{(m)}|m_{m,d}^{(w)}, \Sigma_m^{(w)})}}$
+\State $q(Z) \gets \prod_i^N{\mathcal{N}(m_i^{(z)},\Sigma^{(z)})}$
+\If {$\text{full-rank GFA } (R=min(M,K))$}
+\State $q(\alpha) \gets \prod_{m=1}^M{\prod_{k=1}^K{\mathcal{G}(a_{m,k}^\alpha, b_{m,k}^\alpha)}}$
+\Else{}
+\State $U, V \gets argmax_{U,V} L$
+\State $\langle \alpha \rangle \gets exp(U^\prime V^{\prime \intercal})$
+\EndIf
+\State $q(\tau) \gets \prod_m^M{\mathcal{G}(\tau_m|a_m^\tau,b_m^\tau)}$
+\EndWhile
+\end{algorithmic}
+\end{algorithm}
+
+\section*{Predictive inference}
+
+When using the group factor analysis for prediction, say when we observed all but the m-th group, we can train the model in the remaining $M-1$ groups as usual so as to obtain estimates $Z^*$ for the hidden variables and estimate the expected value $\langle X^{(m)} | X^{-(m)} \rangle$ by refering to the model's original relationship between observed and hidden variables namely $X = ZW + \epsilon$ such that:
+
+$$\langle X^{(m)} | X^{-(m)} \rangle = \langle Z^* W^{(m)} \rangle$$
+
+Where the expected value $\langle Z^* W^{(m)} \rangle$ is obtained with respect to the distribution $q(W^{(m)})q(Z^*)$.
 
 \end{document}
