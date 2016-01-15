@@ -257,21 +257,54 @@ $$ =  -\lambda (tr(U^TU)+tr(V^TV)) + C$$
 
 Such that:
 
-$$L = \sum_m^M{\sum_k^K{\Big(D_m u^\prime_m v_k^{\prime \intercal} - \langle W^{(m)}W^{(m)\intercal}\rangle_{k,k}e^{u^\prime_m v_k^{\prime \intercal}}  \Big) }}-\lambda (tr(U^TU)+tr(V^TV)) + C$$
+$$L = \sum_m^M{\sum_k^K{\Big(D_m log(\alpha_{m,k}) - \langle W^{(m)}W^{(m)\intercal}\rangle_{k,k}\alpha_{m,k} \Big) }}-\lambda (tr(U^TU)+tr(V^TV)) + C$$
 
-and therefore:
+where $\alpha = e^{(UV^T+\mu_u\textbf{1}^T+\textbf{1}\mu_v^T)}$.
 
-$$\frac{\delta L}{\delta U} = AV + \lambda U \qquad \frac{\delta L}{\delta \mu_u} = A\textbf{1}$$
+\bigskip
 
-$$\frac{\delta L}{\delta V} = A^\intercal U + \lambda V \qquad \frac{\delta L}{\delta \mu_v} = A^\intercal \textbf{1}$$
+Expressing first term of L with matrices:
+
+$$\sum_m^M{\sum_k^K{\Big(D_m (UV^T+\mu_u\textbf{1}^T+\textbf{1}\mu_v^T)_{m,k}\Big)}} = tr\Big(D\textbf{1}^T(UV^T+\mu_u\textbf{1}^T+\textbf{1}\mu_v^T)^T\Big)$$
+$$= tr\Big(D\textbf{1}^T(VU^T+\textbf{1}\mu_u^T+\mu_v\textbf{1}^T)\Big)$$
 
 Where:
 
 $$D^\intercal = [D_1,...,D_m,...,D_M]$$
 
-$$A = D\textbf{1}^\intercal - \textbf{1} tr(\langle W^{(m)}W^{(m)\intercal}\rangle)^\intercal \circ exp(U^\prime V^{\prime \intercal})$$
+The derivatives of first term of L are:
 
-Where $\circ$ stands for the Hadamard product (element-wise matrix multiplication) and the unit vectors $\textbf{1}$ are $K \times 1$ and $M \times 1$ respectively.
+$$\frac{\delta Tr\Big(D\textbf{1}^T(VU^T+\textbf{1}\mu_u^T+\mu_v\textbf{1}^T)\Big)}{\delta U} = D\textbf{1}^TV \qquad \frac{\delta Tr\Big(D\textbf{1}^T(VU^T+\textbf{1}\mu_u^T+\mu_v\textbf{1}^T)\Big)}{\delta \mu_u} = D\textbf{1}^T\textbf{1}$$
+
+$$\frac{\delta Tr\Big(D\textbf{1}^T(VU^T+\textbf{1}\mu_u^T+\mu_v\textbf{1}^T)\Big)}{\delta V} = (D\textbf{1}^T)^TU \qquad \frac{\delta Tr\Big(D\textbf{1}^T(VU^T+\textbf{1}\mu_u^T+\mu_v\textbf{1}^T)\Big)}{\delta \mu_v} = (D\textbf{1}^T)^T\textbf{1}$$
+
+The derivatives of third term of L are:
+
+$$\frac{\delta \lambda (tr(U^TU)+tr(V^TV))}{\delta U} = 2\lambda U \qquad \frac{\delta \lambda (tr(U^TU)+tr(V^TV))}{\delta V} = 2\lambda V$$
+
+Derivative of the second term is easier to compute element-wise and then express it with matrices. Let us denote this term as $$L_2=\sum_m^M{\sum_k^K{\langle W^{(m)}W^{(m)\intercal}\rangle_{k,k}e^{(UV^T+\mu_u\textbf{1}^T+\textbf{1}\mu_v^T)_{m,k}} }} = \sum_m^M{\sum_k^K{\langle W^{(m)}W^{(m)\intercal}\rangle_{k,k}e^{(\sum_i^R{u_{m,i}v_{k,i}}+\mu_{u,m}+\mu_{v,k})} }}$$
+
+Element-wise derivatives and their matrix versions of the second term:
+
+$$\frac{\delta L_2}{\delta u_{m,r}} = \sum_k^K{\langle W^{(m)}W^{(m)\intercal}\rangle_{k,k}e^{(\sum_i^R{u_{m,i}v_{k,i}}+\mu_{u,m}+\mu_{v,k})}v_{k,r} } \qquad \frac{\delta L_2}{\delta U} = (B \circ e^{(UV^T+\mu_u\textbf{1}^T+\textbf{1}\mu_v^T)}) V$$
+
+$$\frac{\delta L_2}{\delta v_{k,r}} = \sum_m^M{\langle W^{(m)}W^{(m)\intercal}\rangle_{k,k}e^{(\sum_i^R{u_{m,i}v_{k,i}}+\mu_{u,m}+\mu_{v,k})}u_{m,r} } \qquad \frac{\delta L_2}{\delta V} = (B \circ e^{(UV^T+\mu_u\textbf{1}^T+\textbf{1}\mu_v^T)})^T U$$
+
+$$\frac{\delta L_2}{\delta \mu_{u,m}} = \sum_k^K{\langle W^{(m)}W^{(m)\intercal}\rangle_{k,k}e^{(\sum_i^R{u_{m,i}v_{k,i}}+\mu_{u,m}+\mu_{v,k})} } \qquad \frac{\delta L_2}{\delta \mu_u} = (B \circ e^{(UV^T+\mu_u\textbf{1}^T+\textbf{1}\mu_v^T)}) \textbf{1}$$
+
+$$\frac{\delta L_2}{\delta \mu_{v,k}} = \sum_m^M{\langle W^{(m)}W^{(m)\intercal}\rangle_{k,k}e^{(\sum_i^R{u_{m,i}v_{k,i}}+\mu_{u,m}+\mu_{v,k})} } \qquad \frac{\delta L_2}{\delta \mu_v} = (B \circ e^{(UV^T+\mu_u\textbf{1}^T+\textbf{1}\mu_v^T)})^T \textbf{1}$$
+
+Where $\circ$ stands for the Hadamard product (element-wise matrix multiplication) and B is M $\times$ K matrix where m-th row is the main diagonal of a corresponding $\langle W^{(m)}W^{(m)\intercal}\rangle$, so  $B^T=[diag(\langle W^{(1)}W^{(1)\intercal}\rangle),...,diag(\langle W^{(M)}W^{(M)\intercal}\rangle)]$.
+
+Final gradients are:
+
+$$\frac{\delta L}{\delta U} = AV -2 \lambda U \qquad \frac{\delta L}{\delta \mu_u} = A\textbf{1}$$
+
+$$\frac{\delta L}{\delta V} = A^\intercal U -2 \lambda V \qquad \frac{\delta L}{\delta \mu_v} = A^\intercal \textbf{1}$$
+
+Where:
+
+$$A = D\textbf{1}^\intercal - B \circ e^{(UV^T+\mu_u\textbf{1}^T+\textbf{1}\mu_v^T)}$$
 
 \section*{Full Rank Model Inference.}
 
